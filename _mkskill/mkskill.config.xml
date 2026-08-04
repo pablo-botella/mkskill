@@ -6,8 +6,16 @@
     </version>
     <label key="title" volatile="true" default-to-ts="true">2026-08-04T14:55:50Z</label>
     <create file="__publish.bat" git-ignore="true" eol="crlf">
-git tag {$$$ version $$$}
+@echo off
+set TAG={$$$ version $$$}
+git rev-parse -q --verify refs/tags/%TAG% >NUL 2>&amp;1 &amp;&amp; goto :exists
+git ls-remote --exit-code --tags origin %TAG% >NUL 2>&amp;1 &amp;&amp; goto :exists
+git tag %TAG%
 git push origin main --tags
+exit /b 0
+:exists
+echo ERROR: tag %TAG% already exists - run -vinc first
+exit /b 1
 </create>
   </version-spec>
   <project id="main" name="mkskill" project-type="Go-Module">
