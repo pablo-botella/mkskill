@@ -8,8 +8,10 @@ package mkskill
 
 // The documentation is not automatic — this makes it: `go generate ./...`
 // rebuilds every artifact from _mkskill/, and the golden test fails when
-// anything went stale.
+// anything went stale. The second line propagates the version-spec's
+// destinations (__publish.bat and friends) without touching the version.
 //go:generate go run ./cmd/mkskill -q build
+//go:generate go run ./cmd/mkskill -q -vbuild
 
 import (
 	"flag"

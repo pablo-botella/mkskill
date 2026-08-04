@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mkskill>
   <version-spec params="major:byte,minor:[0-99],build:word">
-    <version major="0" minor="5" build="2" lock="major">
+    <version major="0" minor="5" build="3" lock="major">
       <ts></ts>
     </version>
     <label key="title" volatile="true" default-to-ts="true"></label>
