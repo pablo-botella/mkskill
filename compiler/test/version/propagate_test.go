@@ -199,7 +199,7 @@ func TestPropagationComputeFirst(t *testing.T) {
 // TestDestPathRejectsEscapes locks safeRel on the destinations: a config
 // cannot write outside its own tree, whatever the macros assemble.
 func TestDestPathRejectsEscapes(t *testing.T) {
-	for _, bad := range []string{"../outside.txt", "C:/x.txt", "/../x", `\x`, ".."} {
+	for _, bad := range []string{"../outside.txt", "C:/x.txt", "/../x", `\x`, "..", `sub\..\..\x`} {
 		doc := strings.Replace(propDoc, `<create file="__publish.bat" git-ignore="true" overwrite="true">`,
 			`<create file="`+bad+`" git-ignore="true" overwrite="true">`, 1)
 		base := writeConfig(t, doc)

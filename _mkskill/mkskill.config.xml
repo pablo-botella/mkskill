@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mkskill>
   <version-spec params="major:byte,minor:[0-99],build:word">
-    <version major="0" minor="5" build="3" lock="major">
-      <ts></ts>
+    <version major="0" minor="5" build="4" lock="major">
+      <ts>2026-08-04T14:55:50Z</ts>
     </version>
-    <label key="title" volatile="true" default-to-ts="true"></label>
+    <label key="title" volatile="true" default-to-ts="true">2026-08-04T14:55:50Z</label>
     <create file="__publish.bat" git-ignore="true" eol="crlf">
 git tag {$$$ version $$$}
 git push origin main --tags
@@ -17,9 +17,10 @@ git push origin main --tags
       <description>Compose README.md, AGENTS.md and the Claude Code SKILL.md from one markdown source under _mkskill/.</description>
     </meta>
     <child-project id="cli" name="mkskill-cli" path="./cmd/mkskill" project-type="Go-CLI">
-      <embed filename="mkskill_generated_embed.go" module-name="main" embed-parent="*" embed-version="{$$$ ver:version $$$}"/>
+      <embed filename="mkskill_generated_embed.go" module-name="main" embed-parent="*" embed-version="{$$$ ver:version $$$}"></embed>
     </child-project>
   </project>
   <version-history max="10">
+    <release version="v0.5.4" ts="2026-08-04T14:55:50Z" title="2026-08-04T14:55:50Z" method="vinc-build"></release>
   </version-history>
 </mkskill>

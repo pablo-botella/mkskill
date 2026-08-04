@@ -177,19 +177,25 @@ func vComputeDest(base string, resolve VersionResolver, dest any, prop *VPropaga
 }
 
 // safeRel validates a base-relative path: slashes normalized and
-// cleaned, never absolute, never a Windows volume, never escaping
-// upward. The paths a config declares stay inside the tree they belong
-// to — a "../x", a "C:/x" or a "/tmp/x" is a config error, not a write.
+// cleaned, never absolute, never a drive, never escaping upward. The
+// paths a config declares stay inside the tree they belong to — a
+// "../x", a "C:/x" or a "/tmp/x" is a config error, not a write. The
+// verdict is the SAME on every host: a config path is portable text,
+// so the checks cannot lean on the platform's filepath rules — GOOS
+// decides nothing here.
 func safeRel(raw string) (string, error) {
 	s := strings.TrimSpace(raw)
 	if s == "" {
 		return "", fmt.Errorf("empty path")
 	}
-	if strings.HasPrefix(s, "/") || strings.HasPrefix(s, `\`) ||
-		filepath.IsAbs(s) || filepath.VolumeName(s) != "" {
+	if strings.ContainsRune(s, ':') {
+		return "", fmt.Errorf("path %q: a drive letter or scheme cannot live in a project tree", raw)
+	}
+	s = strings.ReplaceAll(s, `\`, "/")
+	if strings.HasPrefix(s, "/") {
 		return "", fmt.Errorf("path %q: absolute paths cannot live in a project tree", raw)
 	}
-	clean := path.Clean(filepath.ToSlash(s))
+	clean := path.Clean(s)
 	if clean == "." {
 		return "", fmt.Errorf("path %q resolves empty", raw)
 	}

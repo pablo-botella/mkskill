@@ -268,13 +268,6 @@ func (p *Project) OnXmlEnd(d *cargoxml.DecoderWithCargo, frame *cargoxml.Decoder
 	if p.IsChildProject() && p.Path == "" {
 		return NewParseError(d, "child project needs a path (relative to the parent's root)")
 	}
-	if p.Path != "" {
-		// a child's path stays inside the parent's tree — "../x" or an
-		// absolute path is a config error, at the parse, with position
-		if _, err := safeRel(string(p.Path)); err != nil {
-			return NewParseError(d, "child path: "+err.Error())
-		}
-	}
 	if p.Name == "" && p.Path != "" {
 		p.Name = Literal(filepath.Base(string(p.Path))) // default: the folder the project lives in
 	}
@@ -282,13 +275,22 @@ func (p *Project) OnXmlEnd(d *cargoxml.DecoderWithCargo, frame *cargoxml.Decoder
 	// is legal in the attribute; the RENDER must name known views) — see
 	// validateArtifacts, called by Root.Load.
 	// law 1, loudly and at the parse (with its position): the four
-	// sources refuse macros before anything else looks at them
+	// sources refuse macros before anything else looks at them — BEFORE
+	// any shape check, so a macro'd path dies citing the law, not the
+	// colon its macro happens to carry
 	for _, src := range [...]struct {
 		name  string
 		value Literal
 	}{{"id", p.Id}, {"name", p.Name}, {"path", p.Path}, {"project-type", p.ProjectType}} {
 		if err := CheckLiteral(src.name, src.value); err != nil {
 			return NewParseError(d, err.Error())
+		}
+	}
+	if p.Path != "" {
+		// a child's path stays inside the parent's tree — "../x" or an
+		// absolute path is a config error, at the parse, with position
+		if _, err := safeRel(string(p.Path)); err != nil {
+			return NewParseError(d, "child path: "+err.Error())
 		}
 	}
 	if p.ProjectType == "" {
