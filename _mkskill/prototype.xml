@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  mkskill config prototype (new era). One XML per project tree: the main
+  <project> carries every <child-project> nested inside — children have no
+  config file of their own.
+
+  Attribute notes:
+  - id: unique within the whole tree; the prefix for cross-unit references.
+    Optional — a missing id gets an automatic "P0", "P1", … (with a warning;
+    explicit ids are recommended as soon as anything references the unit).
+    "P0" is reserved for the main project.
+  - name: optional — defaults to the folder name (the base for the main
+    project, the path folder for a child).
+  - project-type: optional — defaults to "Other".
+  - path (child only): mandatory, relative to the parent's root.
+  - embed-parent (on a child's <embed>): which of the parent's generated
+    views this child embeds too — "*" for all, or a fine-grained list.
+  - fm-gen: how imported sources get their frontmatter — "embed" (default,
+    injected at the top of the copy) or "extern" (a sibling .fm file);
+    ",preserve" keeps an existing .fm as is instead of regenerating it.
+  - <scan> is reserved: debug output of Save with IncludeScanData; readers
+    recognize it and skip it entirely.
+
+  Macros in this config — {$$$ ref $$$}:
+  Expanded when the XML is parsed — EARLY, one lazy load pass closed over
+  this one file. Markdown keeps its own <$$$msk.…$$$>, resolved LATE at
+  composition time with its softer universe. Two skins, two moments; each
+  parser knows one syntax and the foreign form stays literal — a visible
+  hole beats a silent one. Legal in any
+  attribute value and in the <entry>/<create> text nodes, whole document,
+  under five laws that keep it sane:
+    1. The universe's own SOURCES never expand: id, name, path,
+       project-type — the parser builds the tree and the reference space
+       from them (name feeds prj:id:name; expanding it would be circular).
+       Braces there: LOAD ERROR, never a silent literal — the user typed
+       a macro, silence would confuse. Every OTHER claimed attribute and
+       text value is an Expandable: the raw stays in the document (a
+       rewrite never freezes a template), the render feeds the consumers,
+       and the user decides where a macro makes sense.
+    2. Two phases: the whole tree parses literal first; references resolve
+       after, against the complete tree. Document order never matters.
+    3. Expansion produces values, never syntax: results are not re-scanned
+       for macros and cannot inject structure. Composition happens in the
+       label graph, guarded by its cycle rule.
+    4. An unresolvable reference is a LOAD ERROR (composed docs keep
+       their softer warn-and-leave). EVERY label of every domain resolves
+       at load, cited or not — so the Expandables always resolve on firm
+       ground, a broken or cyclic label fails EVERY verb, and the orphan
+       is nobody's blind spot. Renders are not memoized: the mutators
+       edit the in-memory state and read again. -vcheck stays the guard
+       for what load cannot see: destinations, anchors, drift.
+    5. In attributes, bare references only — no verbs, no connectors;
+       literal text around them is fine (path assembly). Every
+       composition or format is a computed label: want another render,
+       declare another label.
+
+  Reference grammar — the first segment picks the domain:
+    name           local domain. In version-spec: components, version, ts.
+                   In a project: name, id, type, base.
+    label:key      a label of the LOCAL domain (value or computed alike).
+    prj:id:var     a unit's structural variable from anywhere: base, name
+                   (the necessary set; more by the same grammar when a
+                   real case asks).
+    prj:id:label:key   that unit's label.
+    ver:ref        the version domain from project land: ver:version,
+                   ver:ts, ver:major…, ver:label:key.
+    glb:label:key  a global label.
+  prj: always carries its id — a bare "prj:base" is a malformed
+  reference; the local form is the bare name, the addressed form is
+  complete, and no middle form exists.
+  Labels are the ONE named-value system of this universe. A unit's <meta>
+  keys stay a docs affair (their precedence chain, their world) — the
+  config does not read them.
+
+  Labels live in more places than the version-spec, and POSITION DEFINES
+  THE DOMAIN: a <label> child of <mkskill> is global (glb:), inside a
+  <project> it belongs to that unit (prj:id:label:), inside <version-spec>
+  it is a version label (label: locally, ver:label: from outside). Same
+  element, same two classes (value / computed), same one cycle DFS across
+  every domain. volatile and default-to-ts are version-spec ONLY — they
+  are bump semantics; elsewhere a label is plain value or computed. All
+  the resolution cost sits in the load pass; after it, every consumer is
+  a dictionary lookup.
+
+  Variables are LOOKUPS on the parsed tree — anything that needs cooking
+  is a computed label you declare. The catalog:
+    structural     id, name, type, base — base is the RESOLVED unit root
+                   (parent base + path; the tree root for main), computed
+                   in the skeleton phase. path stays declared, literal,
+                   and is not a variable.
+    version        components by name, version (canonical render), ts
+    labels         label:key per domain (glb / prj:id / ver)
+  Doc-only variables (<meta> keys, view, meta.X, section front matter,
+  badge, install, skill.usage.*) do not exist in the config universe.
+  Bare names cannot collide: components live in ver, structural in prj —
+  different domains by construction.
+  The universe is CLOSED over this XML: nothing citable lives outside it —
+  no sources, no markdown, no git, no filesystem except the destinations
+  at write time. The v-verbs are fast by construction, not by
+  optimization: parse one file, resolve what is reachable, touch the
+  destinations, exit.
+-->
+<mkskill>
+
+  <!-- global labels: written once, pointed at from anywhere (glb:label:copyright) -->
+  <label key="copyright">Pablo Botella Navarro</label>
+
+  <!--
+    <version-spec> — the tree's version model. One number for the whole tree
+    (main + children). This XML is the source of truth: the number exists
+    here BEFORE any tag does; git only consumes it. mkskill produces output —
+    it never tags, never publishes, never touches git.
+
+    The command family — two mutate, one repairs, one guards, one reads:
+      mkskill -vinc-<component>   increment a declared component, reset
+                                  everything to its right, propagate — one
+                                  atomic gesture: numbers, ts, labels,
+                                  history entry, every update/create.
+      mkskill -vset "0.7.4"       set outright (dot-separated, full arity,
+                                  positional over params) — same gesture.
+      ... -label:<key> "text"     set a label inline; rides on either
+                                  mutator, never alone.
+      mkskill -vbuild             re-propagate from the current XML state —
+                                  no number, no ts, no history. Idempotent
+                                  repair of drifted destinations.
+      mkskill -vcheck             verify without writing: every destination
+                                  matches today's render, replace anchors
+                                  exist, needed labels are set, .gitignore
+                                  holds what git-ignore promised. The CI
+                                  leg — CI never bumps. Exhaustive: it
+                                  alone resolves the whole spec,
+                                  referenced or not — the guard sees what
+                                  the fast verbs skip.
+      mkskill -vout <ref>         print one render, bare reference only
+                                  (version, ts, a component, label:key) —
+                                  formatting lives in the XML, declare a
+                                  computed label and print it by name.
+                                  -tag is the daily alias of -vout version
+                                  (git tag (mkskill -tag) in the bat).
+    Without a mutation nothing propagates; without a version-spec every
+    v-command errors. Everything validates BEFORE anything is written:
+    unknown component, arity or domain mismatch, locked component — hard
+    error. No carry, no saturation: overflow is an error. Updates and
+    creates run in declaration order.
+    Misplaced spec: <version-spec> inside a <project> is a WARNING and the
+    element is ignored (its meaning there stays reserved).
+
+    Macro grammar in the entry/create TEXT nodes (attributes: bare refs
+    only, law 5):
+      {$$$ name $$$}                a value by reference
+      {$$$ %02d name $$$}           optional Go fmt verb before the name —
+                                    %d, %02d, %x, %X… fmt verbatim
+      {$$$ 'literal' + value $$$}   connector + any of the above; empty
+                                    value: the piece vanishes, connector
+                                    included. That is the WHOLE grammar:
+                                    % opens a verb, a quote opens a
+                                    connector, anything else is a name.
+    Reserved names: version (the canonical render), ts.
+
+    - format: optional override of the canonical render — a Go fmt string
+      applied positionally to the components in params order
+      (format="v%d.%d.%d"). Same verbs as the macro holes. Absent, the
+      render is "v" + the components joined by dots (v0.5.0).
+      {$$$ version $$$} and -tag print it either way.
+    - params: ordered components with domains — name:byte, name:word,
+      name:[lo-hi]. Order is significance: incrementing one resets every
+      component to its right to its minimum.
+    - lock: a locked component refuses -vinc and -vset alike; the conscious
+      gesture to move it is editing this file.
+    - <ts>: UTC RFC-3339 (Z), stamped on every mutation. Empty = never
+      bumped. Timezones deliberately deferred: everything is UTC.
+    - <label>: two exclusive classes, one consumption (label:key).
+      VALUE label — the text node IS the current value, and the universal
+      rule reaches it: the text may carry {$$$ $$$} macros — the document
+      keeps the raw, consumers get the render, and cycles through value
+      texts are caught by the same guard. A mutation without -label:<key>
+      resets it: default-to-ts="true" materializes the new ts,
+      default="literal" writes that literal. The two defaults are
+      mutually exclusive. The history archives value labels RENDERED — a
+      log freezes what was true, that is its job.
+      COMPUTED label — format + params (positional: %d components, %s
+      labels), never stored, always derived. when="ref" guards it: empty
+      referenced value, empty label — and the emptiness propagates to
+      connectors downstream. May reference components and other labels;
+      cycles are a load error. volatile, defaults and -label:<key> on a
+      computed label: load error.
+      Another composition, another format? Another label — they are cheap
+      on purpose; consumers only point.
+    - <update file type="json|xml|replace">: patch a file that other
+      content also owns; file is project-root-relative; replace is the
+      default — the only type that assumes nothing about the file. An
+      <entry>'s text node is always the rendered value; the address
+      differs by type:
+        json     key="ruta/ruta/key" — slash path; flat file = one segment.
+        xml      same key path down to the element; attrib="name" targets
+                 an attribute (absent = the element's text content).
+                 attrib is xml-only — on any other type it is a load
+                 error. Patched through cargoxml: foreign content
+                 survives untouched.
+        replace  no address — each line self-anchors: the static skeleton
+                 (the text outside the macros) locates the file line, and
+                 the whole line is rewritten with the render. A multi-line
+                 entry anchors line by line. Zero matching lines: error.
+                 Several: all rewritten — coordinating the number
+                 everywhere is the point.
+      Entry whitespace: trim="all|left|right|none" (default all) strips
+      each template line; matching compares trimmed against trimmed.
+      indent: output indentation in spaces — absent, replace keeps the
+      indentation the file line already had; explicit forces it.
+      EOL: update preserves the file's newline style.
+    - <create>: a file wholly owned by the version — written entire, no
+      anchors. The template is the text node, or src="path" to an external
+      one — mutually exclusive, both at once is a load error; same macros
+      in either. The newline right after the opening tag is not part of
+      the output. eol="lf|crlf" declares the output's newlines — absent,
+      the template goes as it arrives: inline is LF by XML law (§2.11
+      normalizes line breaks on input), src is verbatim. A .bat wants
+      eol="crlf". git-ignore="true" appends the file to .gitignore if
+      missing (derived output is never committed). overwrite: "true"
+      (default) regenerates every propagation; "warn" leaves an existing
+      file and says so; "false" leaves it and fails — scaffold-once
+      semantics.
+    - embed-version (on a unit's <embed>): a template attribute, not a
+      boolean — its expanded value is what the generated embed carries and
+      what the CLI's version command prints. Absent: no version in the
+      embed. One bare reference, per law 5 — compose in a label.
+
+    Around it, not mkskill's business: git. The bat tags with the -tag
+    output; CI never bumps — it runs -vcheck and compares the pushed tag
+    against -tag, failing when this file and reality disagree.
+  -->
+  <version-spec format="v%d.%d.%d" params="major:byte,minor:[0-99],build:word">
+    <version major="0" minor="5" build="0" lock="major">
+      <ts></ts>
+    </version>
+    <label key="title" volatile="true" default-to-ts="true">version description</label>
+    <label key="vlong" format="version: %d.%d build: %03.3d" params="major,minor,build"></label>
+    <label key="desc" format="%s - version %d.%d build: %03.3d" params="label:title,major,minor,build" when="label:title"></label>
+
+    <update file="/.build/next-release.json" type="json">
+      <entry key="tag">{$$$ version $$$}</entry>
+      <entry key="title">{$$$ label:desc $$$}</entry>
+    </update>
+    <update file="path-to-a-c-header.h">
+      <entry trim="all|left|right|none" indent="0">
+        #define APP_VERSION "{$$$ version $$$}"
+        #define APP_VERSION_L "{$$$ label:vlong $$$}"
+      </entry>
+    </update>
+    <create file="__publish.bat" git-ignore="true" overwrite="true">
+git tag {$$$ version $$$}
+git push origin main --tags
+</create>
+  </version-spec>
+
+  <project id="main" name="project-name" project-type="Go-Module|Go-CLI|Go|JS-Bundle|Other">
+    <embed filename="path-to-embed-file-relative-to-base-project" module-name="module-name"   embed-version="{$$$ ver:label:vlong $$$}"/>
+    <import-miniskin content="relative-path-to-content-base" fm-gen="embed|extern|extern,preserve"/>
+    <preserve>
+      <item file="./README.md"/>
+    </preserve>
+    <child-project id="child-id" name="child-project-name" path="relative-path-to-child-project-root" project-type="Go-CLI">
+      <embed filename="path-to-embed-file-relative-to-base-project" module-name="module-name" embed-parent="*|readme,agents,skill"/>
+      <import-miniskin content="relative-path-to-content-base" fm-gen="embed|extern|extern,preserve"/>
+      <preserve>
+        <item file="./README.md" method="alt|alias" alias="child-readme.md"/>
+      </preserve>
+    </child-project>
+  </project>
+
+  <!--
+    <version-history> — opt-in mutation log, child of <mkskill>, NOT of
+    <version-spec>. You decide IF (by placing this tag) and WHERE (by its
+    position; the end keeps the editable zone compact — growth never pushes
+    your working area). The tool only ever inserts entries AT THE TOP —
+    newest first, so the last release is always the first line — and never
+    creates the element itself: no tag, no history. It records number
+    mutations, not releases: every -vinc/-vset inserts the state it
+    produced, with method="vinc-<component>|vset" saying which. VALUE
+    labels are archived by key (title="…"); computed labels are not —
+    they are derivable. max="N" caps it FIFO, trimmed at the bottom where
+    the old entries live. All UTC.
+  -->
+  <version-history max="10">
+    <release version="v0.5.0" ts="2026-07-31T21:41:02Z" title="Patata Frita" method="vinc-build"/>
+  </version-history>
+
+</mkskill>

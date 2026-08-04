@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mkskill>
+  <version-spec params="major:byte,minor:[0-99],build:word">
+    <version major="0" minor="5" build="2" lock="major">
+      <ts></ts>
+    </version>
+    <label key="title" volatile="true" default-to-ts="true"></label>
+    <create file="__publish.bat" git-ignore="true" eol="crlf">
+git tag {$$$ version $$$}
+git push origin main --tags
+</create>
+  </version-spec>
+  <project id="main" name="mkskill" project-type="Go-Module">
+    <meta>
+      <module>github.com/pablo-botella/mkskill</module>
+      <license>MIT</license>
+      <description>Compose README.md, AGENTS.md and the Claude Code SKILL.md from one markdown source under _mkskill/.</description>
+    </meta>
+    <child-project id="cli" name="mkskill-cli" path="./cmd/mkskill" project-type="Go-CLI">
+      <embed filename="mkskill_generated_embed.go" module-name="main" embed-parent="*" embed-version="{$$$ ver:version $$$}"/>
+    </child-project>
+  </project>
+  <version-history max="10">
+  </version-history>
+</mkskill>

@@ -1,0 +1,9 @@
+# generated, regenerated per machine — never committed
+.claude
+.codex
+
+# built binaries
+/mkskill
+/mkskill.exe
+*.exe
+__publish.bat

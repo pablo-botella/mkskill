@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  demo manifest: deliberately incomplete. Only the mkskill-marked item matters
+  to mkskill; the decoy items point at files that do not exist and carry no
+  mkskill-* attributes, so the scan must ignore them without even a Stat.
+-->
+<miniskin>
+  <mockup-list/>
+  <bucket-list omit="embed,module">
+    <bucket src=".">
+      <resource-list urlbase="/demo">
+
+        <item type="static,parse" src="./_source.list" file="./generated/demo.js" role="bundle" release="true" />
+        <item type="block,parse" src="./_doc_block.list" />
+        <item type="static,parse" src="./_doc_body.list" file="./generated/doc-body.md"
+              mkskill-copy="demo-content.md" mkskill-in="*" mkskill-pos="20" />
+        <item type="static,parse" src="./_notes.list" file="./generated/notes.md"
+              mkskill-copy="notes/notes.md" mkskill-pos="30" />
+      </resource-list>
+    </bucket>
+  </bucket-list>
+</miniskin>

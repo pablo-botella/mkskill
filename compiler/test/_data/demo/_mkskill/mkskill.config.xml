@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- demo fixture: a minimal project tree for the tests -->
+<mkskill>
+  <project id="main" name="demo" project-type="Go-Module">
+    <import-miniskin content="./src" fm-gen="extern,preserve"/>
+    <preserve>
+      <item file="./README.md" method="alias" alias="readme-alt.md"/>
+      <item file="./_mkskill/src/*.md"/>
+      <item file="./_mkskill/src/demo-content.md"/>
+    </preserve>
+    <child-project id="cli" name="tool" path="./cmd/tool" project-type="Go-CLI" global-artifacts="agents,skill">
+      <embed filename="demo_embed.go" module-name="main"/>
+    </child-project>
+  </project>
+</mkskill>
