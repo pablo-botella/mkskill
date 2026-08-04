@@ -22,7 +22,7 @@ var mkskillSkill string
 var MkskillSpec = mkskill.Spec{
 	Name:        "mkskill",
 	Description: "Compose README.md, AGENTS.md and the Claude Code SKILL.md from one markdown source under _mkskill/.",
-	Version:     "v0.5.4",
+	Version:     "v0.5.5",
 	Readme:      mkskillReadme,
 	Agents:      mkskillAgents,
 	Skill:       mkskillSkill,

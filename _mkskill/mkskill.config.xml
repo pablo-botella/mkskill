@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mkskill>
   <version-spec params="major:byte,minor:[0-99],build:word">
-    <version major="0" minor="5" build="4" lock="major">
-      <ts>2026-08-04T14:55:50Z</ts>
+    <version major="0" minor="5" build="5" lock="major">
+      <ts>2026-08-04T16:21:36Z</ts>
     </version>
-    <label key="title" volatile="true" default-to-ts="true">2026-08-04T14:55:50Z</label>
+    <label key="title" volatile="true" default-to-ts="true">2026-08-04T16:21:36Z</label>
     <create file="__publish.bat" git-ignore="true" eol="crlf">
 @echo off
 set TAG={$$$ version $$$}
-git rev-parse -q --verify refs/tags/%TAG% >NUL 2>&amp;1 &amp;&amp; goto :exists
-git ls-remote --exit-code --tags origin %TAG% >NUL 2>&amp;1 &amp;&amp; goto :exists
+git rev-parse -q --verify refs/tags/%TAG% &gt;NUL 2&gt;&amp;1 &amp;&amp; goto :exists
+git ls-remote --exit-code --tags origin %TAG% &gt;NUL 2&gt;&amp;1 &amp;&amp; goto :exists
 git tag %TAG%
 git push origin main --tags
 exit /b 0
@@ -29,6 +29,7 @@ exit /b 1
     </child-project>
   </project>
   <version-history max="10">
+    <release version="v0.5.5" ts="2026-08-04T16:21:36Z" title="2026-08-04T16:21:36Z" method="vinc-build"></release>
     <release version="v0.5.4" ts="2026-08-04T14:55:50Z" title="2026-08-04T14:55:50Z" method="vinc-build"></release>
   </version-history>
 </mkskill>
